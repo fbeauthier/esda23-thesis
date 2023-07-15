@@ -11,7 +11,7 @@ library(sf)
 library(gstat)
 
 
-### OxIS, OAs -----------------------------------------------------------------------
+### OxIS: OAs -----------------------------------------------------------------
 # read OxIS .sav data
 oxis_raw <- read_sav("data/oxis_2019_public.sav")
 #write.csv(oxis_raw, "data/oxis_raw.csv")
@@ -53,17 +53,18 @@ tm_shape(oxis_england_sf) + tm_polygons(col = "black")
   
 
 
-### Census2021, LSOAs ---------------------------------------------------------------------
+### Census2021: LSOAs ---------------------------------------------------------
 # 33,755 LSOAs in England: Census 2021
 # England total population 56.5 million
 
+# requires Census2021 data
 df1 <- read_csv("data/Census2021/census_age_gender_edu.csv")
 df2 <- read_csv("data/Census2021/census_disability.csv")
 df3 <- read_csv("data/Census2021/census_ethnicity.csv")
 df4 <- read_csv("data/Census2021/census_language.csv")
 df5 <- read_csv("data/Census2021/census_religion.csv")
 
-# check all LSOAs present
+# check all LSOAs present in all tables
 # length(unique(df1$`Lower layer Super Output Areas Code`))
 # length(unique(df2$`Lower layer Super Output Areas Code`))
 # length(unique(df3$`Lower layer Super Output Areas Code`))
@@ -74,7 +75,6 @@ df5 <- read_csv("data/Census2021/census_religion.csv")
 # sum(df1$Observation)
 
 colnames(df1)
-
 # create new LSOA table 
 LSOA <- df1 %>%
   select(1, 2, 9) %>%
@@ -82,22 +82,26 @@ LSOA <- df1 %>%
   summarise(population = sum(Observation)) %>%
   ungroup()
 
+# rename columns
 LSOA <- rename(LSOA,
                LSOA_code = `Lower layer Super Output Areas Code`,
                LSOA_name = `Lower layer Super Output Areas`)
 
-# gender
+## 1. gender
 # left join onto LSOA: count of males in LSOA
 LSOA <- df1 %>%
   group_by(`Lower layer Super Output Areas Code`, `Sex (2 categories) Code`) %>%
-  summarise(count = sum(Observation)) %>%
+  summarise(male_count = sum(Observation)) %>%
   filter(`Sex (2 categories) Code` == 2) %>%
-  rename(male_count = count) %>%
   select(1, 3) %>%
   left_join(x = LSOA, by = c("LSOA_code" = "Lower layer Super Output Areas Code"))
 
-# age
-# create binary over65 variable
+# proportion of LSOA male
+LSOA$prop_male <- (LSOA$male_count)/(LSOA$population)
+summary(LSOA$prop_male)
+
+## 2. age
+# create over65 binary variable
 df1$over65 <- ifelse(df1$`Age (6 categories) Code` == 6,1,0)
   
 # left join onto LSOA: count of over65s per LSOA
@@ -108,7 +112,13 @@ LSOA <- df1 %>%
   select(1,3) %>%
   left_join(x = LSOA, by = c("LSOA_code" = "Lower layer Super Output Areas Code"))
 
-# Education
+# proportion of LSOA over 65
+LSOA$prop_over65 <- (LSOA$over65count)/(LSOA$population)
+summary(LSOA$prop_over65)
+
+## 3. Education (% of 16+ population with no qualifications (less than A-levels)
+
+
 
 # Religiosity
 
