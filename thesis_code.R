@@ -288,7 +288,7 @@ oxis_england <- oxis_england %>%
 gg_miss_var(oxis_england)
 summary(aggr(oxis_england, sortVar=TRUE))$combinations
 
-# use missRanger package: rpart to impute missing data
+# use missRanger package to impute missing data
 oxis_england$children_hh <- as.numeric(oxis_england$children_hh)
 
 oxis_england_imputed <- missRanger(oxis_england, 
@@ -867,11 +867,33 @@ fviz_eig(pca_model, addlabels = TRUE, ncp = 17)
 fviz_eig(pca_model, choice = "eigenvalue",
          addlabels = TRUE, ncp = 17)
 
-# model 2
+# model 2 scree plots
 fviz_eig(pca_model2, choice = "eigenvalue", addlabels = TRUE, ncp = 17,
-         geom = "line")
-fviz_eig(pca_model2, addlabels = TRUE, ncp = 17)
+         xlab = "Principal Components", geom = "line")
 
+fviz_eig(pca_model2, addlabels = TRUE, ncp = 17, xlab = "Principal Components")
+
+pca_model2$sdev
+pr.var <- (pca_model2$sdev)^2
+pve <- (pr.var/sum(pr.var))
+
+plot(cumsum(pve),
+     xlab = "Principal Components",
+     ylab = "Cumulative Proportion of Variance Explained",
+     ylim  = c(0, 1),
+     xaxt = "n",
+     type = "b", cex = 0.5, col = "dark blue")
+# Define x-axis manually
+axis(1, at = 1:17, labels = c(1:17))
+
+# tri-plot
+library(rgl)
+biplot3D(pca_model2)
+
+scores = as.data.frame(pca_model2$scores)
+plot3d(scores[,1:3], 
+       size=5,
+       col = seq(nrow(scores)))
 
 # view pca loadings: first 5
 pca_model2$loadings[, 1:3]
