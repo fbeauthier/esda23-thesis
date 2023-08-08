@@ -895,7 +895,7 @@ plot3d(scores[,1:3],
        size=5,
        col = seq(nrow(scores)))
 
-# view pca loadings: first 5
+# view pca loadings: first 3
 pca_model2$loadings[, 1:3]
 # view eigenvals
 get_eig(pca_model2)
