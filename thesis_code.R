@@ -855,7 +855,6 @@ ggcorrplot(corr_matrix) # view
 
 # get principal components
 pca_model <- prcomp(final[3:19], center = TRUE, scale. = TRUE, retx = TRUE)
-summary(pca_model, loadings = TRUE, scores = TRUE)
 
 pca_model2 <- princomp(final[3:19], cor = TRUE, scores = TRUE) # cor standardises the data
 pca2_summary <- summary(pca_model2, loadings = TRUE, scores = TRUE)
@@ -886,9 +885,6 @@ plot(cumsum(pve),
 # Define x-axis manually
 axis(1, at = 1:17, labels = c(1:17))
 
-# tri-plot
-library(rgl)
-biplot3D(pca_model2)
 
 scores = as.data.frame(pca_model2$scores)
 plot3d(scores[,1:3], 
@@ -948,4 +944,97 @@ colnames(OAs)
 oxis_oa <- filter(OAs, geo_code %in% unique(oxis$OA))
 
 st_write(oxis_oa, "data/geos/oxis_oa/oxis_oa.shp")
+
+
+### Cluster analysis ----------------------------------------------------------
+library(FactoMineR)
+library(factoextra)
+
+# PCA on subset dimensions of variables
+# 1. socio-demographic 
+pc_soc <- princomp(final[3:10], cor = TRUE, scores = TRUE) # cor standardises the data
+summary(pc_soc, loadings = TRUE, scores = TRUE)
+
+# view scree plot
+fviz_eig(pc_soc, addlabels = TRUE, ncp = 10) # first 2 PCs
+fviz_eig(pc_soc, choice = "eigenvalue",
+         addlabels = TRUE, ncp = 10)
+
+# cum_var
+pc_soc$sdev
+pc_soc.var <- (pc_soc$sdev)^2
+pc_soc_pve <- (pc_soc.var/sum(pc_soc.var))
+
+plot(cumsum(pc_soc_pve),
+     xlab = "Principal Components",
+     ylab = "Cumulative Proportion of Variance Explained",
+     ylim  = c(0, 1),
+     xaxt = "n",
+     type = "b", cex = 0.5, col = "dark blue")
+# Define x-axis manually
+axis(1, at = 1:10, labels = c(1:10))
+
+# bind 2 PCs to final df
+final_cluster <- dplyr::select(final, 1:2) %>%
+  bind_cols(pc_soc$scores %>% as.data.frame()) %>%
+  dplyr::select(1:4) %>%
+  rename(var1 = 3, var2 = 4)
+  
+# 2. broadband
+pc_int <- princomp(final[11:17], cor = TRUE, scores = TRUE) # cor standardises the data
+summary(pc_int, loadings = TRUE, scores = TRUE)
+
+# view scree plot
+fviz_eig(pc_int, addlabels = TRUE, ncp = 7) # first 2 PCs
+fviz_eig(pc_int, choice = "eigenvalue",
+         addlabels = TRUE, ncp = 7)
+
+# cum_var
+pc_int$sdev
+pc_int.var <- (pc_int$sdev)^2
+pc_int_pve <- (pc_int.var/sum(pc_int.var))
+
+plot(cumsum(pc_int_pve),
+     xlab = "Principal Components",
+     ylab = "Cumulative Proportion of Variance Explained",
+     ylim  = c(0, 1),
+     xaxt = "n",
+     type = "b", cex = 0.5, col = "dark blue")
+# Define x-axis manually
+axis(1, at = 1:10, labels = c(1:10))
+
+# bind 2 PCs to final df
+final_cluster <- dplyr::select(final_cluster, 1:4) %>%
+  bind_cols(pc_int$scores %>% as.data.frame()) %>%
+  dplyr::select(1:6) %>%
+  rename(var3 = 5, var4 = 6)
+
+  
+# 3. internet use 
+pc_dig <- princomp(final[18:19], cor = TRUE, scores = TRUE) # cor standardises the data
+summary(pc_dig, loadings = TRUE, scores = TRUE)
+
+# view scree plot
+fviz_eig(pc_dig, addlabels = TRUE, ncp = 2) # first 2 PCs
+fviz_eig(pc_dig, choice = "eigenvalue",
+         addlabels = TRUE, ncp = 7)
+
+# bind PC1 to final df
+final_cluster <- dplyr::select(final_cluster, 1:6) %>%
+  bind_cols(pc_dig$scores %>% as.data.frame()) %>%
+  dplyr::select(1:7) %>%
+  rename(var5 = 7)
+
+
+# k-means clustering analysis
+final_cluster_kmeans <- scale(final_cluster[3:7])
+
+fviz_nbclust(final_cluster_kmeans, kmeans, method = "silhouette") # silhouette
+# optimal number of clusters k = 2
+
+fviz_nbclust(final_cluster_kmeans, kmeans, method = "wss")
+# crashes... cannot compute wss on such large data dimension
+
+## conclusion: not worth doing clustering
+
 
