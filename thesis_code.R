@@ -924,9 +924,16 @@ summary(index_pca_wt)
 # standardise using min-max normalisation
 index_pca_wt$S_index <- min_max_norm(index_pca_wt$sum)
 
-# view
-index_pca_wt %>% ggplot(aes(x = S_index)) +
-  geom_boxplot()
+# view standardised index distribution
+library(hrbrthemes)
+index_pca_wt %>%
+  ggplot(aes(x = S_index)) +
+  geom_histogram(bins = 50, fill="navy", color="#e9ecef", alpha=0.9) +
+  ylab("Count of LSOAs") + xlab("SI score") + 
+  theme_ipsum() +
+  theme(axis.title.x = element_text(size=10, face="bold", hjust = 0.5),
+        axis.title.y = element_text(size=10, face="bold", hjust = 0.5)
+        )
 
 # save as .csv
 write_csv(index_pca_wt, "data/final_index_PCA_04082023.csv")
